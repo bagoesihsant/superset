@@ -21,6 +21,12 @@ import zipfile
 from typing import TYPE_CHECKING
 
 import pandas as pd
+import numpy as np
+import string
+
+from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
+from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
+
 from flask import flash, g, redirect
 from flask_appbuilder import expose, SimpleFormView
 from flask_appbuilder.models.sqla.interface import SQLAInterface
@@ -78,6 +84,46 @@ def upload_stream_write(form_file_field: "FileStorage", path: str) -> None:
             if not chunk:
                 break
             file_description.write(chunk)
+
+# Fungsi tambahan untuk melakukan pre-processing
+
+# Menghapus tanda baca / punctuation
+def remove_punctuation(text):
+    cleaned_text = text.translate(str.maketrans("", "", string.punctuation))
+    return cleaned_text
+
+# Mengambil stopword
+def get_stopwords():
+    # Inisialisasi stopword remover factory
+    factory = StopWordRemoverFactory()
+    stopwords = factory.get_stop_words()
+    return stopwords
+
+# Inisialisasi Stemmber
+def init_stemmer():
+    stem_factory = StemmerFactory()
+    stemmer = stem_factory.create_stemmer()
+    return stemmer
+
+# Menghapus stopwords
+def remove_stopword(text):
+    # Membuat kumpulan stopwords
+    stopwords = get_stopwords()
+
+    # Menghapus Stopwords
+    cleaned_word = [word for word in text.split() if word not in stopwords]
+    cleaned_word = ' '.join(cleaned_word)
+    return cleaned_word
+
+# Melakukan Stemming
+def stemming_word(text):
+    # Memanggil stemmer
+    stemmer = init_stemmer()
+
+    # Proses Stemming
+    stem_word = [stemmer.stem(word) for word in text.split()]
+    stem_word = ' '.join(stem_word)
+    return stem_word
 
 
 class DatabaseView(
@@ -174,6 +220,34 @@ class CsvToDatabaseView(SimpleFormView):
                     skiprows=form.skiprows.data,
                 )
             )
+
+            # Logging apabila proses dijalankan di file ini
+            app.logger.info("Dijalankan dari views.py")
+
+            # Mengambil tipe data dan kolom pada dataframe
+            dfType = dict(df.dtypes)
+
+            # Looping tipe data dan kolom dataframe
+            for key,val in dfType.items():
+                if val == np.object:
+                    # Pre Processing untuk text dijalankan disini
+
+                    # Transformasi lowercase
+                    df[key] = df[key].str.lower()
+
+                    # Melakukan penghapusan punctuation
+                    df[key] = df[key].apply(remove_punctuation)
+
+                    # Melakukan penghapusan stopwords
+                    df[key] = df[key].apply(remove_stopword)
+
+                    # Melakukan stemming
+                    df[key] = df[key].apply(stemming_word)
+
+                else:
+                    # Jika data tidak berupa string / object
+                    app.logger.info("Ini bertipe data integer / float")
+
 
             database = (
                 db.session.query(models.Database)
