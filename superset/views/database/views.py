@@ -221,32 +221,78 @@ class CsvToDatabaseView(SimpleFormView):
                 )
             )
 
-            # Logging apabila proses dijalankan di file ini
-            app.logger.info("Dijalankan dari views.py")
+            # Melakukan Pre Processing jika checkbox pre processing dicentang
+            if form.pre_process.data == True:
+                # Logging apabila proses dijalankan di file ini
+                app.logger.info("Dijalankan dari views.py")
 
-            # Mengambil tipe data dan kolom pada dataframe
-            dfType = dict(df.dtypes)
+                # Memeriksa apakah kolom yang akan di pre processing diisi atau tidak
+                if form.selected_col.data == None:
+                    # Jika tidak diisi
 
-            # Looping tipe data dan kolom dataframe
-            for key,val in dfType.items():
-                if val == np.object:
-                    # Pre Processing untuk text dijalankan disini
+                    # Mengambil tipe data dan kolom pada dataframe
+                    dfType = dict(df.dtypes)
 
-                    # Transformasi lowercase
-                    df[key] = df[key].str.lower()
+                    # Looping tipe data dan kolom dataframe
+                    for key,val in dfType.items():
+                        if val == np.object:
+                            # Pre Processing untuk text dijalankan disini
 
-                    # Melakukan penghapusan punctuation
-                    df[key] = df[key].apply(remove_punctuation)
+                            # # Transformasi lowercase
+                            df[key] = df[key].str.lower()
 
-                    # Melakukan penghapusan stopwords
-                    df[key] = df[key].apply(remove_stopword)
+                            # Jika ada regex yang diisi
+                            if form.regex_str.data == None:
+                                regex = "(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)|(\w+://\S+)"
+                                app.logger.info("Regex tidak diisi")
+                                df[key] = df[key].str.replace(regex, "")
+                            else:
+                                regex = form.regex_str.data
+                                app.logger.info("Regex diisi")
+                                df[key] = df[key].str.replace(regex, "")
 
-                    # Melakukan stemming
-                    df[key] = df[key].apply(stemming_word)
+                            # # Melakukan penghapusan punctuation
+                            df[key] = df[key].apply(remove_punctuation)
 
+                            # # Melakukan penghapusan stopwords
+                            df[key] = df[key].apply(remove_stopword)
+
+                            # # Melakukan stemming
+                            df[key] = df[key].apply(stemming_word)
+
+                        else:
+                            # Jika data tidak berupa string / object
+                            app.logger.info("Ini bertipe data integer / float")
                 else:
-                    # Jika data tidak berupa string / object
-                    app.logger.info("Ini bertipe data integer / float")
+                    # Jika diisi
+
+                    col_name = form.selected_col.data
+                    col_names = col_name.split(",")
+
+                    for col in col_names:
+                        # Pre Processing untuk text dijalankan disini
+
+                        # # Transformasi lowercase
+                        df[col] = df[col].str.lower()
+
+                        # Jika ada regex yang diisi
+                        if form.regex_str.data == None:
+                            regex = "(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)|(\w+://\S+)"
+                            app.logger.info("Regex tidak diisi")
+                            df[col] = df[col].str.replace(regex, "")
+                        else:
+                            regex = form.regex_str.data
+                            app.logger.info("Regex diisi")
+                            df[col] = df[col].str.replace(regex, "")
+
+                        # # Melakukan penghapusan punctuation
+                        df[col] = df[col].apply(remove_punctuation)
+
+                        # # Melakukan penghapusan stopwords
+                        df[col] = df[col].apply(remove_stopword)
+
+                        # # Melakukan stemming
+                        df[col] = df[col].apply(stemming_word)
 
 
             database = (

@@ -237,6 +237,36 @@ class CsvToDatabaseForm(DynamicForm):
             'Use [""] for empty string.'
         ),
     )
+    pre_process = BooleanField(
+        _("Toggle Pre Processing"),
+        description=_("""
+                        Toggle Pre Processing or not. If this checkbox is checked, the data will be pre processed first.
+                        If not checked, the rest of the fields will not be used and ignored.
+                      """)
+    )
+    selected_col = StringField(
+        _("CSV Column(s)"),
+        description=_(
+            """
+            Column(s) that will be pre processed. Please use [,] as the separator if you choose to use at least 2 columns.
+            If you do not define the columns, all columns' data type that detected as 'object' will be pre processed.
+            """
+        ),
+        validators=[Optional()],
+        widget=BS3TextFieldWidget()
+    )
+    regex_str = StringField(
+        _("Regex String"),
+        description=_(
+            """
+            Regex that will be used as preprocessing regex. You can leave this empty or fill it with your own regex.
+            If you leave this field empty, there's a default regex to use.
+            """
+        ),
+        validators=[Optional()],
+        widget=BS3TextFieldWidget(),
+    )
+
 
 
 class ExcelToDatabaseForm(DynamicForm):
