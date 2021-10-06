@@ -266,6 +266,15 @@ class CsvToDatabaseForm(DynamicForm):
         validators=[Optional()],
         widget=BS3TextFieldWidget(),
     )
+    hash_status = BooleanField(
+        _("Toggle Hashing"),
+        description=_(
+            """
+            Toggle Hashing or not. If this checkbox is checked, the selected column(s) will be hashed using sha256 algorithm.
+            If not checked, the column will not be hashed.
+            """
+        )
+    )
 
 
 

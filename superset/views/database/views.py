@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 import pandas as pd
 import numpy as np
 import string
+import hashlib
 
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
@@ -260,6 +261,11 @@ class CsvToDatabaseView(SimpleFormView):
                             # # Melakukan stemming
                             df[key] = df[key].apply(stemming_word)
 
+                            # Jika hashing dipilih atau tidak
+                            if form.hash_status.data == True:
+                                # Jika dipilih
+                                df[key] = df[key].apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
+
                         else:
                             # Jika data tidak berupa string / object
                             app.logger.info("Ini bertipe data integer / float")
@@ -293,6 +299,11 @@ class CsvToDatabaseView(SimpleFormView):
 
                         # # Melakukan stemming
                         df[col] = df[col].apply(stemming_word)
+
+                        # Jika hashing dipilih atau tidak
+                        if form.hash_status.data == True:
+                            # Jika dipilih
+                            df[col] = df[col].apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
 
 
             database = (
