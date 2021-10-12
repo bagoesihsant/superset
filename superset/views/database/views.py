@@ -183,7 +183,41 @@ class CsvToDatabaseView(SimpleFormView):
                 # Check if the user is giving column(s) to pre process or not
                 if form.selected_col.data == None:
                     # If the user did not give any column(s)
-                    
+                    # Getting the column(s) name and datatype
+                    dfType = dict(df.dtypes)
+
+                    # Looping the column(s)
+                    for key, value in dfType.items():
+                        # Check if the column(s) datatype equals to object
+                        if value == np.object:
+                            # If the column(s) datatype equals to object
+                            
+                            # Pre Processing Begin
+                            # Transforming the text into lowercase character(s)
+                            df[key] = df[key].apply(stopword.lowercase_text)
+
+                            # Removing Special Character(s) using Regex
+                            df[key] = df[key].apply(regex.regex_word)
+
+                            # Removing Text Punctuation(s)
+                            df[key] = df[key].apply(punctuation.remove_punctuation)
+
+                            # Removing Text Stopword(s)
+                            df[key] = df[key].apply(stopword.remove_stopword)
+
+                            # Stem the Text(s)
+                            df[key] = df[key].apply(stopword.stemming_word)
+
+                            # Checking if the user decide to hash the text(s)
+                            if form.hash_status.data == True:
+                                # If the user decide to hash the text(s)
+                                # Check if the user give any specific column(s) to hash
+                                if form.hash_str
+                            else:
+                                # If the user decide not to hash the text(s)
+                                pass
+                        else:
+                            pass
                 else:
                     # If the user give at least 1 column
                     selected_col = form.selected_col.data
