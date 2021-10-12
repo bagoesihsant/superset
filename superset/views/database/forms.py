@@ -275,6 +275,17 @@ class CsvToDatabaseForm(DynamicForm):
             """
         )
     )
+    hash_str = StringField(
+        _("Column To Hash"),
+        description=_(
+            """
+             Column(s) that will be hashed. Please use [,] as the separator if you choose to use at least 2 columns.
+            If you do not define the columns, default column that will be hashed will be taken from selected column(s) for preprocessing.
+            """
+        ),
+        validators=[Optional()],
+        widget=BS3TextFieldWidget(),
+    )
 
 
 

@@ -29,6 +29,7 @@ from flask_appbuilder.models.sqla.interface import SQLAInterface
 from flask_appbuilder.security.decorators import has_access
 from flask_babel import lazy_gettext as _
 from werkzeug.wrappers import Response
+from superset.helpers.txt_hash.hash import hash_text
 from wtforms.fields import StringField
 from wtforms.validators import ValidationError
 
@@ -197,7 +198,13 @@ class CsvToDatabaseView(SimpleFormView):
                             df[key] = df[key].apply(stopword.lowercase_text)
 
                             # Removing Special Character(s) using Regex
-                            df[key] = df[key].apply(regex.regex_word)
+                            # Checking if the user specify a new regex string
+                            if form.regex_str.data == None:
+                                # If the user do not specify a new regex string
+                                df[key] = df[key].apply(regex.regex_word)
+                            else:
+                                # If the user specify a new regex string
+                                df[key] = df[key].apply(lambda x: regex.regex_word(x, form.regex_str.data))
 
                             # Removing Text Punctuation(s)
                             df[key] = df[key].apply(punctuation.remove_punctuation)
@@ -212,7 +219,15 @@ class CsvToDatabaseView(SimpleFormView):
                             if form.hash_status.data == True:
                                 # If the user decide to hash the text(s)
                                 # Check if the user give any specific column(s) to hash
-                                if form.hash_str
+                                if form.hash_str.data == None:
+                                    # If the user decide not to give any specific column(s) to hash
+                                    df[key] = df[key].apply(hash.hash_text)
+                                else:
+                                    # If the user decide to give any specific column(s) to hash
+                                    hash_cols = form.hash_str.data.split(",")
+                                    # Loop the columns
+                                    for col in hash_cols:
+                                        df[col] = df[col].apply(hash.hash_text)
                             else:
                                 # If the user decide not to hash the text(s)
                                 pass
@@ -220,8 +235,48 @@ class CsvToDatabaseView(SimpleFormView):
                             pass
                 else:
                     # If the user give at least 1 column
-                    selected_col = form.selected_col.data
+                    selected_cols = form.selected_col.data.split(",")
 
+                    # Looping the column(s)
+                    for col in selected_cols:
+                        # Pre Processing Begin
+                        # Transforming the text into lowercase character(s)
+                        df[col] = df[col].apply(stopword.lowercase_text)
+
+                        # Removing Special Character(s) using Regex
+                        # Checking if the user specify a new regex string
+                        if form.regex_str.data == None:
+                            # If the user do not specify a new regex string
+                            df[col] = df[col].apply(regex.regex_word)
+                        else:
+                            # If the user specify a new regex string
+                            df[col] = df[col].apply(lambda x: regex.regex_word(x, form.regex_str.data))
+
+                        # Removing Text Punctuation(s)
+                        df[col] = df[col].apply(punctuation.remove_punctuation)
+
+                        # Removing Text Stopword(s)
+                        df[col] = df[col].apply(stopword.remove_stopword)
+
+                        # Stem the Text(s)
+                        df[col] = df[col].apply(stopword.stemming_word)
+
+                        # Checking if the user decide to hash the text(s)
+                        if form.hash_status.data == True:
+                            # If the user decide to hash the text(s)
+                            # Check if the user give any specific column(s) to hash
+                            if form.hash_str.data == None:
+                                # If the user decide not to give any specific column(s) to hash
+                                df[col] = df[col].apply(hash.hash_text)
+                            else:
+                                # If the user decide to give any specific column(s) to hash
+                                hash_cols = form.hash_str.data.split(",")
+                                # Loop the columns
+                                for cols in hash_cols:
+                                    df[cols] = df[cols].apply(hash.hash_text)
+                        else:
+                            # If the user decide not to hash the text(s)
+                            pass
             else:
                 # If Pre Processing is Not Selected
                 pass
