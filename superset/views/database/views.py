@@ -22,11 +22,6 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 import numpy as np
-import string
-import hashlib
-
-from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
-from Sastrawi.Stemmer.StemmerFactory import StemmerFactory
 
 from flask import flash, g, redirect
 from flask_appbuilder import expose, SimpleFormView
@@ -46,6 +41,7 @@ from superset.sql_parse import Table
 from superset.typing import FlaskResponse
 from superset.utils import core as utils
 from superset.views.base import DeleteMixin, SupersetModelView, YamlExportMixin
+from superset.helpers import hash, punctuation, regex, stopword
 
 from .forms import ColumnarToDatabaseForm, CsvToDatabaseForm, ExcelToDatabaseForm
 from .mixins import DatabaseMixin
@@ -85,47 +81,6 @@ def upload_stream_write(form_file_field: "FileStorage", path: str) -> None:
             if not chunk:
                 break
             file_description.write(chunk)
-
-# Fungsi tambahan untuk melakukan pre-processing
-
-# Menghapus tanda baca / punctuation
-def remove_punctuation(text):
-    cleaned_text = text.translate(str.maketrans("", "", string.punctuation))
-    return cleaned_text
-
-# Mengambil stopword
-def get_stopwords():
-    # Inisialisasi stopword remover factory
-    factory = StopWordRemoverFactory()
-    stopwords = factory.get_stop_words()
-    return stopwords
-
-# Inisialisasi Stemmber
-def init_stemmer():
-    stem_factory = StemmerFactory()
-    stemmer = stem_factory.create_stemmer()
-    return stemmer
-
-# Menghapus stopwords
-def remove_stopword(text):
-    # Membuat kumpulan stopwords
-    stopwords = get_stopwords()
-
-    # Menghapus Stopwords
-    cleaned_word = [word for word in text.split() if word not in stopwords]
-    cleaned_word = ' '.join(cleaned_word)
-    return cleaned_word
-
-# Melakukan Stemming
-def stemming_word(text):
-    # Memanggil stemmer
-    stemmer = init_stemmer()
-
-    # Proses Stemming
-    stem_word = [stemmer.stem(word) for word in text.split()]
-    stem_word = ' '.join(stem_word)
-    return stem_word
-
 
 class DatabaseView(
     DatabaseMixin, SupersetModelView, DeleteMixin, YamlExportMixin
@@ -222,89 +177,20 @@ class CsvToDatabaseView(SimpleFormView):
                 )
             )
 
-            # Melakukan Pre Processing jika checkbox pre processing dicentang
+            # Pre Processing Form
             if form.pre_process.data == True:
-                # Logging apabila proses dijalankan di file ini
-                app.logger.info("Dijalankan dari views.py")
-
-                # Memeriksa apakah kolom yang akan di pre processing diisi atau tidak
+                # If Pre Processing Selected
+                # Check if the user is giving column(s) to pre process or not
                 if form.selected_col.data == None:
-                    # Jika tidak diisi
-
-                    # Mengambil tipe data dan kolom pada dataframe
-                    dfType = dict(df.dtypes)
-
-                    # Looping tipe data dan kolom dataframe
-                    for key,val in dfType.items():
-                        if val == np.object:
-                            # Pre Processing untuk text dijalankan disini
-
-                            # # Transformasi lowercase
-                            df[key] = df[key].str.lower()
-
-                            # Jika ada regex yang diisi
-                            if form.regex_str.data == None:
-                                regex = "(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)|(\w+://\S+)"
-                                app.logger.info("Regex tidak diisi")
-                                df[key] = df[key].str.replace(regex, "")
-                            else:
-                                regex = form.regex_str.data
-                                app.logger.info("Regex diisi")
-                                df[key] = df[key].str.replace(regex, "")
-
-                            # # Melakukan penghapusan punctuation
-                            df[key] = df[key].apply(remove_punctuation)
-
-                            # # Melakukan penghapusan stopwords
-                            df[key] = df[key].apply(remove_stopword)
-
-                            # # Melakukan stemming
-                            df[key] = df[key].apply(stemming_word)
-
-                            # Jika hashing dipilih atau tidak
-                            if form.hash_status.data == True:
-                                # Jika dipilih
-                                df[key] = df[key].apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
-
-                        else:
-                            # Jika data tidak berupa string / object
-                            app.logger.info("Ini bertipe data integer / float")
+                    # If the user did not give any column(s)
+                    
                 else:
-                    # Jika diisi
+                    # If the user give at least 1 column
+                    selected_col = form.selected_col.data
 
-                    col_name = form.selected_col.data
-                    col_names = col_name.split(",")
-
-                    for col in col_names:
-                        # Pre Processing untuk text dijalankan disini
-
-                        # # Transformasi lowercase
-                        df[col] = df[col].str.lower()
-
-                        # Jika ada regex yang diisi
-                        if form.regex_str.data == None:
-                            regex = "(@[A-Za-z0-9]+)|(#[A-Za-z0-9]+)|(\w+://\S+)"
-                            app.logger.info("Regex tidak diisi")
-                            df[col] = df[col].str.replace(regex, "")
-                        else:
-                            regex = form.regex_str.data
-                            app.logger.info("Regex diisi")
-                            df[col] = df[col].str.replace(regex, "")
-
-                        # # Melakukan penghapusan punctuation
-                        df[col] = df[col].apply(remove_punctuation)
-
-                        # # Melakukan penghapusan stopwords
-                        df[col] = df[col].apply(remove_stopword)
-
-                        # # Melakukan stemming
-                        df[col] = df[col].apply(stemming_word)
-
-                        # Jika hashing dipilih atau tidak
-                        if form.hash_status.data == True:
-                            # Jika dipilih
-                            df[col] = df[col].apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
-
+            else:
+                # If Pre Processing is Not Selected
+                pass
 
             database = (
                 db.session.query(models.Database)
