@@ -129,6 +129,8 @@ class CsvToDatabaseView(SimpleFormView):
         form.infer_datetime_format.data = True
         form.decimal.data = "."
         form.if_exists.data = "fail"
+        form.hash_status.data = False
+        form.pre_process.data = False
 
     def form_post(self, form: CsvToDatabaseForm) -> Response:
         database = form.con.data
@@ -191,8 +193,8 @@ class CsvToDatabaseView(SimpleFormView):
                     for key, value in dfType.items():
                         # Check if the column(s) datatype equals to object
                         if value == np.object:
-                            # If the column(s) datatype equals to object
-                            
+                            # If the Column(s) datatype equals to object
+
                             # Pre Processing Begin
                             # Transforming the text into lowercase character(s)
                             df[key] = df[key].apply(stopword.lowercase_text)
@@ -214,71 +216,83 @@ class CsvToDatabaseView(SimpleFormView):
 
                             # Stem the Text(s)
                             df[key] = df[key].apply(stopword.stemming_word)
-
-                            # Checking if the user decide to hash the text(s)
-                            if form.hash_status.data == True:
-                                # If the user decide to hash the text(s)
-                                # Check if the user give any specific column(s) to hash
-                                if form.hash_str.data == None:
-                                    # If the user decide not to give any specific column(s) to hash
-                                    df[key] = df[key].apply(hash.hash_text)
-                                else:
-                                    # If the user decide to give any specific column(s) to hash
-                                    hash_cols = form.hash_str.data.split(",")
-                                    # Loop the columns
-                                    for col in hash_cols:
-                                        df[col] = df[col].apply(hash.hash_text)
-                            else:
-                                # If the user decide not to hash the text(s)
-                                pass
                         else:
+                            # If the Column(s) datatype is not equals to object
                             pass
                 else:
-                    # If the user give at least 1 column
-                    selected_cols = form.selected_col.data.split(",")
+                    # If the user give any column(s) as input 
+                    # Checking User Input Column(s) with available Data Frame Column(s)
+                    check_cols = [col for col in form.selected_col.data.split(",") if col in df.columns]
+
+                    # Check if the User Input Column(s) have at least 1 valid column(s)
+                    if len(check_cols) > 0:
+                        # If there's at least 1 column(s) available from user input and match the dataframe columns 
+                        # Looping the column(s)
+                        for col in check_cols:
+                            # Pre Processing Begin
+                            # Transforming the text into lowercase character(s)
+                            df[col] = df[col].apply(stopword.lowercase_text)
+
+                            # Removing Special Character(s) using Regex
+                            # Checking if the user specify a new regex string
+                            if form.regex_str.data == None:
+                                # If the user do not specify a new regex string
+                                df[col] = df[col].apply(regex.regex_word)
+                            else:
+                                # If the user specify a new regex string
+                                df[col] = df[col].apply(lambda x: regex.regex_word(x, form.regex_str.data))
+
+                            # Removing Text Punctuation(s)
+                            df[col] = df[col].apply(punctuation.remove_punctuation)
+
+                            # Removing Text Stopword(s)
+                            df[col] = df[col].apply(stopword.remove_stopword)
+
+                            # Stem the Text(s)
+                            df[col] = df[col].apply(stopword.stemming_word)
+                    else:
+                        # If there's no column(s) that match the dataframe columns
+                        raise Exception("Column(s) not found inside the file provided")
+            else:
+                # If Pre Processing was not selected
+                pass
+            
+
+            # Checking if the user decide to hash the text(s)
+            if form.hash_status.data == True:
+                # If the user decide to hash the text(s)
+                # Check if the user give any specific column(s) to hash
+                if form.hash_str.data == None:
+                    # If the user decide not to give any specific column(s) to hash
+                    # Getting the column(s) name and datatype
+                    dfType = dict(df.dtypes)
 
                     # Looping the column(s)
-                    for col in selected_cols:
-                        # Pre Processing Begin
-                        # Transforming the text into lowercase character(s)
-                        df[col] = df[col].apply(stopword.lowercase_text)
-
-                        # Removing Special Character(s) using Regex
-                        # Checking if the user specify a new regex string
-                        if form.regex_str.data == None:
-                            # If the user do not specify a new regex string
-                            df[col] = df[col].apply(regex.regex_word)
+                    for key,value in dfType.items():
+                        # Check if the column(s) datatype equals to object
+                        if value == np.object:
+                            # If the Column(s) datatype equals to object
+                            df[key] = df[key].apply(hash.hash_text)
                         else:
-                            # If the user specify a new regex string
-                            df[col] = df[col].apply(lambda x: regex.regex_word(x, form.regex_str.data))
-
-                        # Removing Text Punctuation(s)
-                        df[col] = df[col].apply(punctuation.remove_punctuation)
-
-                        # Removing Text Stopword(s)
-                        df[col] = df[col].apply(stopword.remove_stopword)
-
-                        # Stem the Text(s)
-                        df[col] = df[col].apply(stopword.stemming_word)
-
-                        # Checking if the user decide to hash the text(s)
-                        if form.hash_status.data == True:
-                            # If the user decide to hash the text(s)
-                            # Check if the user give any specific column(s) to hash
-                            if form.hash_str.data == None:
-                                # If the user decide not to give any specific column(s) to hash
-                                df[col] = df[col].apply(hash.hash_text)
-                            else:
-                                # If the user decide to give any specific column(s) to hash
-                                hash_cols = form.hash_str.data.split(",")
-                                # Loop the columns
-                                for cols in hash_cols:
-                                    df[cols] = df[cols].apply(hash.hash_text)
-                        else:
-                            # If the user decide not to hash the text(s)
+                            # If the Column(s) datatype is not equals to object
                             pass
+                else:
+                    # If the user decide to give any specific column(s) to hash
+                    # Checking User Input Column(s) with available Data Frame Column(s)
+                    check_cols = [col for col in form.hash_str.data.split(",") if col in df.columns]
+
+                    # Check if the User Input Column(s) have at least 1 valid column(s)
+                    if len(check_cols) > 0:
+                        # If there's at least 1 column(s) available from user input and match the dataframe columns 
+                        # Looping the column(s)
+                        for col in check_cols:
+                            # Hashing specified column(s)
+                            df[col] = df[col].apply(hash.hash_text)
+                    else:
+                        # If there's no column(s) that match the dataframe columns
+                        raise Exception("Column(s) not found inside the file provided")
             else:
-                # If Pre Processing is Not Selected
+                # If the user decide not to hash the text(s)
                 pass
 
             database = (
@@ -421,6 +435,121 @@ class ExcelToDatabaseView(SimpleFormView):
                 skiprows=form.skiprows.data,
                 sheet_name=form.sheet_name.data if form.sheet_name.data else 0,
             )
+
+            # Pre Processing Form
+            if form.pre_process.data == True:
+                # If Pre Processing Selected
+                # Check if the user is giving column(s) to pre process or not
+                if form.selected_col.data == None:
+                    # If the user did not give any column(s)
+                    # Getting the column(s) name and datatype
+                    dfType = dict(df.dtypes)
+
+                    # Looping the column(s)
+                    for key, value in dfType.items():
+                        # Check if the column(s) datatype equals to object
+                        if value == np.object:
+                            # If the Column(s) datatype equals to object
+
+                            # Pre Processing Begin
+                            # Transforming the text into lowercase character(s)
+                            df[key] = df[key].apply(stopword.lowercase_text)
+
+                            # Removing Special Character(s) using Regex
+                            # Checking if the user specify a new regex string
+                            if form.regex_str.data == None:
+                                # If the user do not specify a new regex string
+                                df[key] = df[key].apply(regex.regex_word)
+                            else:
+                                # If the user specify a new regex string
+                                df[key] = df[key].apply(lambda x: regex.regex_word(x, form.regex_str.data))
+
+                            # Removing Text Punctuation(s)
+                            df[key] = df[key].apply(punctuation.remove_punctuation)
+
+                            # Removing Text Stopword(s)
+                            df[key] = df[key].apply(stopword.remove_stopword)
+
+                            # Stem the Text(s)
+                            df[key] = df[key].apply(stopword.stemming_word)
+                        else:
+                            # If the Column(s) datatype is not equals to object
+                            pass
+                else:
+                    # If the user give any column(s) as input 
+                    # Checking User Input Column(s) with available Data Frame Column(s)
+                    check_cols = [col for col in form.selected_col.data.split(",") if col in df.columns]
+
+                    # Check if the User Input Column(s) have at least 1 valid column(s)
+                    if len(check_cols) > 0:
+                        # If there's at least 1 column(s) available from user input and match the dataframe columns 
+                        # Looping the column(s)
+                        for col in check_cols:
+                            # Pre Processing Begin
+                            # Transforming the text into lowercase character(s)
+                            df[col] = df[col].apply(stopword.lowercase_text)
+
+                            # Removing Special Character(s) using Regex
+                            # Checking if the user specify a new regex string
+                            if form.regex_str.data == None:
+                                # If the user do not specify a new regex string
+                                df[col] = df[col].apply(regex.regex_word)
+                            else:
+                                # If the user specify a new regex string
+                                df[col] = df[col].apply(lambda x: regex.regex_word(x, form.regex_str.data))
+
+                            # Removing Text Punctuation(s)
+                            df[col] = df[col].apply(punctuation.remove_punctuation)
+
+                            # Removing Text Stopword(s)
+                            df[col] = df[col].apply(stopword.remove_stopword)
+
+                            # Stem the Text(s)
+                            df[col] = df[col].apply(stopword.stemming_word)
+                    else:
+                        # If there's no column(s) that match the dataframe columns
+                        raise Exception("Column(s) not found inside the file provided")
+            else:
+                # If Pre Processing was not selected
+                pass
+            
+
+            # Checking if the user decide to hash the text(s)
+            if form.hash_status.data == True:
+                # If the user decide to hash the text(s)
+                # Check if the user give any specific column(s) to hash
+                if form.hash_str.data == None:
+                    # If the user decide not to give any specific column(s) to hash
+                    # Getting the column(s) name and datatype
+                    dfType = dict(df.dtypes)
+
+                    # Looping the column(s)
+                    for key,value in dfType.items():
+                        # Check if the column(s) datatype equals to object
+                        if value == np.object:
+                            # If the Column(s) datatype equals to object
+                            df[key] = df[key].apply(hash.hash_text)
+                        else:
+                            # If the Column(s) datatype is not equals to object
+                            pass
+                else:
+                    # If the user decide to give any specific column(s) to hash
+                    # Checking User Input Column(s) with available Data Frame Column(s)
+                    check_cols = [col for col in form.hash_str.data.split(",") if col in df.columns]
+
+                    # Check if the User Input Column(s) have at least 1 valid column(s)
+                    if len(check_cols) > 0:
+                        # If there's at least 1 column(s) available from user input and match the dataframe columns 
+                        # Looping the column(s)
+                        for col in check_cols:
+                            # Hashing specified column(s)
+                            df[col] = df[col].apply(hash.hash_text)
+                    else:
+                        # If there's no column(s) that match the dataframe columns
+                        raise Exception("Column(s) not found inside the file provided")
+            else:
+                # If the user decide not to hash the text(s)
+                pass
 
             database = (
                 db.session.query(models.Database)
