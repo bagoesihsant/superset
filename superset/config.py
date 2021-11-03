@@ -383,6 +383,7 @@ DEFAULT_FEATURE_FLAGS: Dict[str, bool] = {
     # a custom security config could potentially give access to setting filters on
     # tables that users do not have access to.
     "ROW_LEVEL_SECURITY": True,
+    "COLUMN_LEVEL_SECURITY": True,
     # Enables Alerts and reports new implementation
     "ALERT_REPORTS": False,
     # Enable experimental feature to search for other dashboards
@@ -1155,7 +1156,7 @@ TALISMAN_CONFIG = {
 #     "tables": [["table_name", filters.FilterContains, "rls"]]
 # }
 RLS_FORM_QUERY_REL_FIELDS: Optional[Dict[str, List[List[Any]]]] = None
-
+CLS_FORM_QUERY_REL_FIELDS: Optional[Dict[str, List[List[Any]]]] = None
 #
 # Flask session cookie options
 #

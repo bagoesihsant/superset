@@ -126,6 +126,7 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
         )
         from superset.connectors.sqla.views import (
             RowLevelSecurityFiltersModelView,
+            ColumnLevelSecurityFiltersModelView,
             SqlMetricInlineView,
             TableColumnInlineView,
             TableModelView,
@@ -273,6 +274,17 @@ class SupersetAppInitializer:  # pylint: disable=too-many-public-methods
             icon="fa-lock",
             menu_cond=lambda: feature_flag_manager.is_feature_enabled(
                 "ROW_LEVEL_SECURITY"
+            ),
+        )
+        appbuilder.add_view(
+            ColumnLevelSecurityFiltersModelView,
+            "Column Level Security",
+            label=__("Column level security"),
+            category="Security",
+            category_label=__("Security"),
+            icon="fa-cog",
+            menu_cond=lambda: feature_flag_manager.is_feature_enabled(
+                "COLUMN_LEVEL_SECURITY"
             ),
         )
 

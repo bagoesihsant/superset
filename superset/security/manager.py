@@ -154,6 +154,9 @@ class SupersetSecurityManager(  # pylint: disable=too-many-public-methods
         "Row Level Security",
         "Row Level Security Filters",
         "RowLevelSecurityFiltersModelView",
+        "Column Level Security",
+        "Column Level Security Filters",
+        "ColumnLevelSecurityFiltersModelView"
     } | USER_MODEL_VIEWS
 
     ALPHA_ONLY_VIEW_MENUS = {

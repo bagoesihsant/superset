@@ -38,6 +38,7 @@ from typing import (
 import dateutil.parser
 import pandas as pd
 import sqlalchemy as sa
+from sqlalchemy.sql.type_api import INDEXABLE
 import sqlparse
 from flask import escape, Markup
 from flask_appbuilder import Model
@@ -1705,12 +1706,28 @@ RLSFilterRoles = Table(
     Column("rls_filter_id", Integer, ForeignKey("row_level_security_filters.id")),
 )
 
+CLSFilterRoles = Table(
+    "cls_filter_roles",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("role_id", Integer, ForeignKey("ab_role.id"), nullable=False),
+    Column("rls_filter_id", Integer, ForeignKey("column_level_security_filters.id")),
+)
+
 RLSFilterTables = Table(
     "rls_filter_tables",
     metadata,
     Column("id", Integer, primary_key=True),
     Column("table_id", Integer, ForeignKey("tables.id")),
     Column("rls_filter_id", Integer, ForeignKey("row_level_security_filters.id")),
+)
+
+CLSFilterTables = Table(
+    "cls_filter_tables",
+    metadata,
+    Column("id", Integer, primary_key=True),
+    Column("table_id", Integer, ForeignKey("tables.id")),
+    Column("rls_filter_id", Integer, ForeignKey("column_level_security_filters.id")),
 )
 
 
@@ -1734,4 +1751,26 @@ class RowLevelSecurityFilter(Model, AuditMixinNullable):
         SqlaTable, secondary=RLSFilterTables, backref="row_level_security_filters"
     )
 
+    clause = Column(Text, nullable=False)
+
+class ColumnLevelSecurityFilter(Model, AuditMixinNullable):
+    """
+    Custom where clauses attached to Tables and Roles.
+    """
+
+    __tablename__ = "column_level_security_filters"
+    id = Column(Integer, primary_key=True)
+    filter_type = Column(
+        Enum(*[filter_type.value for filter_type in utils.ColumnLevelSecurityFilterType])
+    )
+    group_key = Column(String(255), nullable=True)
+    roles = relationship(
+        security_manager.role_model,
+        secondary=CLSFilterRoles,
+        backref="column_level_security_filters"
+    )
+    tables = relationship(
+        SqlaTable, secondary=CLSFilterTables, backref="column_level_security_filters"
+    )
+    
     clause = Column(Text, nullable=False)

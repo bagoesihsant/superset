@@ -334,6 +334,9 @@ class RowLevelSecurityFilterType(str, Enum):
     REGULAR = "Regular"
     BASE = "Base"
 
+class ColumnLevelSecurityFilterType(str, Enum):
+    REGULAR = "Regular"
+    BASE = "Base"
 
 class TimeRangeEndpoint(str, Enum):
     """
