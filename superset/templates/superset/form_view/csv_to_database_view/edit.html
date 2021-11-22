@@ -16,8 +16,20 @@ KIND, either express or implied. See the License for the
 specific language governing permissions and limitations
 under the License.
 #}
+<style>
+  .overlay {
+    opacity: 0.8;
+    background-color: #ccc;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0px;
+    left: 0px;
+    z-index: 1000;
+  }
+</style>
+<div class="overlay"></div>
 {% extends 'appbuilder/general/model/edit.html' %}
-
 {% block tail_js %}
 {{ super() }}
 <script>
@@ -35,6 +47,8 @@ under the License.
     update_schemas_allowed_for_csv_upload(db.val());
   });
 
+
+  initPage();
   hide_preprocess();
   hide_hash();
 
@@ -56,6 +70,10 @@ under the License.
       hide_hash();
       toggle_hash = false;
     }
+  });
+
+  $('form#model_form').on('submit', function () {
+    displayLoading();
   });
 
   function update_schemas_allowed_for_csv_upload(db_id) {
@@ -123,6 +141,14 @@ under the License.
     hash_str.parent().removeClass('hidden-lg hidden-md');
 
     hash_str.parent().prev().removeClass('hidden-lg hidden-md');
+  }
+
+  function initPage() {
+    $('.overlay').addClass('hidden-lg hidden-md');
+  }
+
+  function displayLoading() {
+    $('.overlay').removeClass('hidden-lg hidden-md');
   }
 
 </script>

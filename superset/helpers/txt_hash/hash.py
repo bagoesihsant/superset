@@ -18,4 +18,4 @@
 import hashlib
 
 def hash_text(text):
-    return hashlib.sha256(text.encode()).hexdigest()
+    return hashlib.sha256(str(text).encode()).hexdigest()
