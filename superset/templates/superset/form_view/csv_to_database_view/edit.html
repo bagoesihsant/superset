@@ -28,7 +28,17 @@ under the License.
     z-index: 1000;
   }
 </style>
-<div class="overlay"></div>
+<div class="overlay">
+  <div class="row" style="margin-top: 20%;">
+    <div class="col-lg-3"></div>
+    <div class="col-lg-6">
+      <h2 class="text-center">Please Wait. Your data is being uploaded.</h2>
+      <img src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif" alt="Loading Logo"
+        class="img-responsive center-block" style="margin-top: 50px;">
+    </div>
+    <div class="col-lg-3"></div>
+  </div>
+</div>
 {% extends 'appbuilder/general/model/edit.html' %}
 {% block tail_js %}
 {{ super() }}
