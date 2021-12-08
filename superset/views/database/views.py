@@ -303,6 +303,14 @@ class CsvToDatabaseView(SimpleFormView):
                 # If the user decide not to hash the text(s)
                 pass
 
+            # Change Datatype Object to Datetime for Date Column
+            for col in df.columns:
+                if "DATE" in col:
+                    if (pd.api.types.is_datetime64_any_dtype(df[col])):
+                        pass
+                    else:
+                        df[col] = pd.to_datetime(df[col])
+
             database = (
                 db.session.query(models.Database)
                 .filter_by(id=form.data.get("con").data.get("id"))
