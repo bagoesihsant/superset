@@ -17,8 +17,10 @@
 
 def add_id_on_table(table_name):
     return """
-        ALTER TABLE {} ADD COLUMN id INT PRIMARY KEY FIRST
-    """.format(table_name)
+        IF NOT EXISTS( SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE table_name = '{}' AND column_name = 'id') THEN
+            ALTER TABLE {} ADD id INT PRIMARY KEY;
+        END IF;
+    """.format(table_name, table_name)
 
 def create_sequence_table(table_name):
     return """
