@@ -42,7 +42,7 @@ from superset.sql_parse import Table
 from superset.typing import FlaskResponse
 from superset.utils import core as utils
 from superset.views.base import DeleteMixin, SupersetModelView, YamlExportMixin
-from superset.helpers import hash, punctuation, regex, stopword, str_columns
+from superset.helpers import hash, punctuation, regex, stopword, str_columns, dbhelper
 
 from .forms import ColumnarToDatabaseForm, CsvToDatabaseForm, ExcelToDatabaseForm
 from .mixins import DatabaseMixin
@@ -310,12 +310,37 @@ class CsvToDatabaseView(SimpleFormView):
                         pass
                     else:
                         df[col] = pd.to_datetime(df[col])
+                    # pd.to_datetime(d[c], infer_datetime_format=True) 
 
             database = (
                 db.session.query(models.Database)
                 .filter_by(id=form.data.get("con").data.get("id"))
                 .one()
             )
+
+            # Intercept The Database
+
+            # Create Empty Table for body
+            empty_table = df.head(0)
+
+            database.db_engine_spec.df_to_sql(
+                database,
+                csv_table,
+                empty_table,
+                to_sql_kwargs={
+                    "chunksize": 1000,
+                    "if_exists": form.if_exists.data,
+                    "index": form.index.data,
+                    "index_label": form.index_label.data,
+                },
+            )
+
+            with database.get_sqla_engine().connect() as conn:
+                conn.execute(dbhelper.add_id_on_table(csv_table))
+                conn.execute(dbhelper.create_sequence_table(csv_table))
+                conn.execute(dbhelper.create_before_insert_trigger_table(csv_table))
+                conn.execute(dbhelper.create_after_insert_trigger_table(csv_table))
+                
 
             database.db_engine_spec.df_to_sql(
                 database,
