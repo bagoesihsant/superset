@@ -17,6 +17,7 @@
 """Package's main module!"""
 from flask import current_app, Flask
 from werkzeug.local import LocalProxy
+from sqlalchemy import exc
 
 from superset.app import create_app
 from superset.connectors.connector_registry import ConnectorRegistry
