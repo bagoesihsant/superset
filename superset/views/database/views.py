@@ -323,6 +323,9 @@ class CsvToDatabaseView(SimpleFormView):
             # Create Empty Table for body
             empty_table = df.head(0)
 
+            # Get Database Name
+            db_name = form.con.data
+
             database.db_engine_spec.df_to_sql(
                 database,
                 csv_table,
@@ -336,7 +339,7 @@ class CsvToDatabaseView(SimpleFormView):
             )
 
             with database.get_sqla_engine().connect() as conn:
-                conn.execute(dbhelper.add_id_on_table(csv_table))
+                conn.execute(dbhelper.add_id_on_table(csv_table, db_name))
                 conn.execute(dbhelper.create_sequence_table(csv_table))
                 conn.execute(dbhelper.create_before_insert_trigger_table(csv_table))
                 conn.execute(dbhelper.create_after_insert_trigger_table(csv_table))
