@@ -28,7 +28,7 @@ under the License.
     z-index: 1000;
   }
 </style>
-<div class="overlay">
+<div class="overlay hidden-lg hidden-md">
   <div class="row" style="margin-top: 20%;">
     <div class="col-lg-3"></div>
     <div class="col-lg-6">
@@ -56,11 +56,6 @@ under the License.
   db.change(function () {
     update_schemas_allowed_for_csv_upload(db.val());
   });
-
-
-  initPage();
-  hide_preprocess();
-  hide_hash();
 
   $('#pre_process').on('click', function () {
     if (toggle_pre_process == false) {
@@ -155,11 +150,18 @@ under the License.
 
   function initPage() {
     $('.overlay').addClass('hidden-lg hidden-md');
+    // $('.overlay').css({ "display": "none" });
   }
 
   function displayLoading() {
     $('.overlay').removeClass('hidden-lg hidden-md');
+    // $('.overlay').css({ "display": "block" });
   }
+
+  initPage();
+  hide_preprocess();
+  hide_hash();
+
 
 </script>
 {% endblock %}
