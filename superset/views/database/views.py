@@ -344,33 +344,44 @@ class CsvToDatabaseView(SimpleFormView):
                 conn.execute(dbhelper.create_sequence_table(csv_table))
                 conn.execute(dbhelper.create_before_insert_trigger_table(csv_table))
                 conn.execute(dbhelper.create_after_insert_trigger_table(csv_table))
+                conn.execute(dbhelper.create_function_get_delimiter_count(csv_table))
+                conn.execute(dbhelper.create_function_split_by_delimiter(csv_table))
+                conn.execute(dbhelper.create_diaglist_table(csv_table))
+                conn.execute(dbhelper.create_proclist_table(csv_table))
+                conn.execute(dbhelper.create_procedure_insert_diaglist(csv_table))
+                conn.execute(dbhelper.create_procedure_insert_proclist(csv_table))
+                conn.execute(dbhelper.create_trigger_after_insert_diaglist(csv_table))
+                conn.execute(dbhelper.create_trigger_after_insert_proclist(csv_table))
+                
                 
 
-            for i in range(len(df)):
-                try:
-                    database.db_engine_spec.df_to_sql(
-                        database,
-                        csv_table,
-                        df.iloc[i:(i+1)],
-                        to_sql_kwargs= {
-                            "if_exists" : form.if_exists.data,
-                            "index": form.index.data
-                        }
-                    )
-                except exc.IntegrityError as e:
-                    pass
+            # Manual Insert
+            # for i in range(len(df)):
+            #     try:
+            #         database.db_engine_spec.df_to_sql(
+            #             database,
+            #             csv_table,
+            #             df.iloc[i:(i+1)],
+            #             to_sql_kwargs= {
+            #                 "if_exists" : form.if_exists.data,
+            #                 "index": form.index.data
+            #             }
+            #         )
+            #     except exc.IntegrityError as e:
+            #         pass
 
-            # database.db_engine_spec.df_to_sql(
-            #     database,
-            #     csv_table,
-            #     df,
-            #     to_sql_kwargs={
-            #         "chunksize": 1000,
-            #         "if_exists": form.if_exists.data,
-            #         "index": form.index.data,
-            #         "index_label": form.index_label.data,
-            #     },
-            # )
+            # to_sql insert ( batch insert )
+            database.db_engine_spec.df_to_sql(
+                database,
+                csv_table,
+                df,
+                to_sql_kwargs={
+                    "chunksize": 1000,
+                    "if_exists": form.if_exists.data,
+                    "index": form.index.data,
+                    "index_label": form.index_label.data,
+                },
+            )
 
             # Connect table to the database that should be used for exploration.
             # E.g. if hive was used to upload a csv, presto will be a better option
