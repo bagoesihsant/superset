@@ -340,8 +340,8 @@ class CsvToDatabaseView(SimpleFormView):
             )
 
             with database.get_sqla_engine().connect() as conn:
+                conn.execute(dbhelper.create_sequence())
                 conn.execute(dbhelper.add_id_on_table(csv_table))
-            #     conn.execute(dbhelper.create_sequence_table(csv_table))
             #     conn.execute(dbhelper.create_before_insert_trigger_table(csv_table))
             #     conn.execute(dbhelper.create_after_insert_trigger_table(csv_table))
             #     conn.execute(dbhelper.create_function_get_delimiter_count(csv_table))

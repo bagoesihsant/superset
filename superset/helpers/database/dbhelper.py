@@ -20,12 +20,10 @@ def add_id_on_table(table_name):
         ALTER TABLE {} ADD COLUMN IF NOT EXISTS id INT NOT NULL PRIMARY KEY DEFAULT nextval('eklaim_sequences');
     """.format(table_name)
 
-def create_sequence_table(table_name):
+def create_sequence():
     return """
-        CREATE TABLE IF NOT EXISTS sequence_id_{} (
-            id INT AUTO_INCREMENT PRIMARY KEY
-        )
-    """.format(table_name)
+        CREATE SEQUENCE IF NOT EXISTS eklaim_sequences START 1 INCREMENT 1;
+    """
 
 def create_before_insert_trigger_table(table_name):
     return """
