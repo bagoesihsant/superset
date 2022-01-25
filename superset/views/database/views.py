@@ -325,7 +325,7 @@ class CsvToDatabaseView(SimpleFormView):
             empty_table = df.head(0)
 
             # Get Database Name
-            db_name = form.con.data
+            # db_name = form.con.data
 
             database.db_engine_spec.df_to_sql(
                 database,
@@ -340,18 +340,18 @@ class CsvToDatabaseView(SimpleFormView):
             )
 
             with database.get_sqla_engine().connect() as conn:
-                conn.execute(dbhelper.add_id_on_table(csv_table, db_name))
-                conn.execute(dbhelper.create_sequence_table(csv_table))
-                conn.execute(dbhelper.create_before_insert_trigger_table(csv_table))
-                conn.execute(dbhelper.create_after_insert_trigger_table(csv_table))
-                conn.execute(dbhelper.create_function_get_delimiter_count(csv_table))
-                conn.execute(dbhelper.create_function_split_by_delimiter(csv_table))
-                conn.execute(dbhelper.create_diaglist_table(csv_table))
-                conn.execute(dbhelper.create_proclist_table(csv_table))
-                conn.execute(dbhelper.create_procedure_insert_diaglist(csv_table))
-                conn.execute(dbhelper.create_procedure_insert_proclist(csv_table))
-                conn.execute(dbhelper.create_trigger_after_insert_diaglist(csv_table))
-                conn.execute(dbhelper.create_trigger_after_insert_proclist(csv_table))
+                conn.execute(dbhelper.add_id_on_table(csv_table))
+            #     conn.execute(dbhelper.create_sequence_table(csv_table))
+            #     conn.execute(dbhelper.create_before_insert_trigger_table(csv_table))
+            #     conn.execute(dbhelper.create_after_insert_trigger_table(csv_table))
+            #     conn.execute(dbhelper.create_function_get_delimiter_count(csv_table))
+            #     conn.execute(dbhelper.create_function_split_by_delimiter(csv_table))
+            #     conn.execute(dbhelper.create_diaglist_table(csv_table))
+            #     conn.execute(dbhelper.create_proclist_table(csv_table))
+            #     conn.execute(dbhelper.create_procedure_insert_diaglist(csv_table))
+            #     conn.execute(dbhelper.create_procedure_insert_proclist(csv_table))
+            #     conn.execute(dbhelper.create_trigger_after_insert_diaglist(csv_table))
+            #     conn.execute(dbhelper.create_trigger_after_insert_proclist(csv_table))
                 
                 
 

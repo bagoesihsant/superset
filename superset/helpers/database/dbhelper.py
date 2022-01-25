@@ -15,12 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-def add_id_on_table(table_name, db_name):
+def add_id_on_table(table_name):
     return """
-        IF NOT EXISTS( SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = '{}' AND table_name = '{}' AND column_name = 'id') THEN
-            ALTER TABLE {} ADD id INT PRIMARY KEY FIRST;
-        END IF;
-    """.format(db_name, table_name, table_name)
+        ALTER TABLE {} ADD COLUMN IF NOT EXISTS id INT NOT NULL PRIMARY KEY DEFAULT nextval('eklaim_sequences');
+    """.format(table_name)
 
 def create_sequence_table(table_name):
     return """
