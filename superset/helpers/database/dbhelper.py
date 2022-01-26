@@ -24,111 +24,71 @@ def create_sequence():
     return """
         CREATE SEQUENCE IF NOT EXISTS eklaim_sequences START 1 INCREMENT 1;
     """
-
-def create_before_insert_trigger_table(table_name):
-    return """
-        DROP TRIGGER IF EXISTS get_id_{};
-        CREATE TRIGGER get_id_{} BEFORE INSERT ON {} FOR EACH ROW
-            BEGIN
-                INSERT INTO sequence_id_{} VALUES (NULL);
-                SET NEW.id = LAST_INSERT_ID();
-            END 
-    """.format(table_name, table_name, table_name, table_name)
-
-def create_after_insert_trigger_table(table_name):
-    return """
-        DROP TRIGGER IF EXISTS remove_id_{};
-        CREATE TRIGGER remove_id_{} AFTER INSERT ON {} FOR EACH ROW
-            BEGIN
-                DELETE FROM sequence_id_{} WHERE id = (SELECT * FROM sequence_id_{} ORDER BY id ASC LIMIT 1);
-            END
-    """.format(table_name, table_name, table_name, table_name, table_name)
-
 def create_diaglist_table(table_name):
     return """
         CREATE TABLE IF NOT EXISTS diaglist_{} (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            id_eklaim INT,
-            kode_diagnosis VARCHAR(255)
+            id BIGSERIAL PRIMARY KEY NOT NULL,
+            id_eklaim INT NOT NULL,
+            SEP VARCHAR(255) NOT NULL,
+            kode_diagnosis VARCHAR(255) NOT NULL
         )
     """.format(table_name)
 
 def create_proclist_table(table_name):
     return """
         CREATE TABLE IF NOT EXISTS proclist_{} (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            id_eklaim INT,
-            kode_probabilitas VARCHAR(255)
+            id BIGSERIAL PRIMARY KEY NOT NULL,
+            id_eklaim INT NOT NULL,
+            SEP VARCHAR(255) NOT NULL,
+            kode_probabilitas VARCHAR(255) NOT NULL
         )
     """.format(table_name)
 
-def create_function_get_delimiter_count(table_name):
+def create_function_add_diaglist(table_name):
     return """
-        DROP FUNCTION IF EXISTS func_{}_get_delimiter_count;
-        CREATE FUNCTION func_{}_get_delimiter_count (f_string VARCHAR(255), f_delimiter VARCHAR(5))
-        RETURNS INT(11)
+        CREATE OR REPLACE FUNCTION add_diaglist()
+        RETURNS TRIGGER
+        AS
+        $$
         BEGIN
-            RETURN 1 + (LENGTH(f_string) - LENGTH(REPLACE(f_string, f_delimiter, '')));
+            INSERT INTO diaglist_{} (id_eklaim, SEP, kode_diagnosis) SELECT "id", "SEP", UNNEST(STRING_TO_ARRAY("DIAGLIST", ';')) FROM {} WHERE id = NEW.id;
+            RETURN NEW;
         END
+        $$ LANGUAGE 'plpgsql';
     """.format(table_name, table_name)
 
-def create_function_split_by_delimiter(table_name):
+def create_function_add_proclist(table_name):
     return """
-        DROP FUNCTION IF EXISTS func_{}_split_by_delimiter;
-        CREATE FUNCTION func_{}_split_by_delimiter (f_string VARCHAR(255), f_delimiter VARCHAR(5), f_order INT(11)) RETURNS VARCHAR(255) CHARSET utf8
+        CREATE OR REPLACE FUNCTION add_proclist()
+        RETURNS TRIGGER
+        AS
+        $$
         BEGIN
-            DECLARE result VARCHAR(255) DEFAULT '';
-            SET result = REVERSE(SUBSTRING_INDEX(REVERSE(SUBSTRING_INDEX(f_string, f_delimiter, f_order)), f_delimiter, 1));
-            RETURN result;
+            INSERT INTO proclist_{} (id_eklaim, SEP, kode_probabilitas) SELECT "id", "SEP", UNNEST(STRING_TO_ARRAY("PROCLIST", ';')) FROM {} WHERE id = NEW.id;
+            RETURN NEW;
         END
+        $$ LANGUAGE 'plpgsql';
     """.format(table_name, table_name)
-
-def create_procedure_insert_diaglist(table_name):
-    return """
-        DROP PROCEDURE IF EXISTS insert_split_result_diaglist_{};
-        CREATE PROCEDURE insert_split_result_diaglist_{} (IN f_string VARCHAR(255), IN f_delimiter VARCHAR(5), IN f_old_id INT(11))
-        BEGIN
-            DECLARE counter INT DEFAULT 0;
-            DECLARE i INT DEFAULT 0;
-            SET counter = func_{}_get_delimiter_count(f_string, f_delimiter);
-            WHILE i < counter
-                DO
-                    SET i = i + 1;
-                    INSERT INTO diaglist_{} (id_eklaim, kode_diagnosis) VALUES (f_old_id, func_{}_split_by_delimiter(f_string, f_delimiter, i));
-            END WHILE;
-        END    
-    """.format(table_name, table_name, table_name, table_name, table_name)
-
-def create_procedure_insert_proclist(table_name):
-    return """
-        DROP PROCEDURE IF EXISTS insert_split_result_proclist_{};
-        CREATE PROCEDURE insert_split_result_proclist_{} (IN f_string VARCHAR(255), IN f_delimiter VARCHAR(5), IN f_old_id INT(11))
-        BEGIN
-            DECLARE counter INT DEFAULT 0;
-            DECLARE i INT DEFAULT 0;
-            SET counter = func_{}_get_delimiter_count(f_string, f_delimiter);
-            WHILE i < counter
-                DO
-                    SET i = i + 1;
-                    INSERT INTO proclist_{} (id_eklaim, kode_probabilitas) VALUES (f_old_id, func_{}_split_by_delimiter(f_string, f_delimiter, i));
-            END WHILE;
-        END    
-    """.format(table_name, table_name, table_name, table_name, table_name)
 
 def create_trigger_after_insert_diaglist(table_name):
     return """
-        DROP TRIGGER IF EXISTS after_insert_diaglist_{};
-        CREATE TRIGGER after_insert_diaglist_{} AFTER INSERT ON {} FOR EACH ROW
-            BEGIN
-                CALL insert_split_result_diaglist_{}(NEW.DIAGLIST, ';', NEW.id);
-            END
-    """.format(table_name, table_name, table_name, table_name)
+        DROP TRIGGER IF EXISTS after_insert_diaglist ON {}; 
+
+        CREATE TRIGGER after_insert_diaglist
+            AFTER INSERT
+            ON {}
+            FOR EACH ROW
+            EXECUTE PROCEDURE add_diaglist();
+    """.format(table_name, table_name)
 
 def create_trigger_after_insert_proclist(table_name):
     return """
-        DROP TRIGGER IF EXISTS after_insert_proclist_{};
-        CREATE TRIGGER after_insert_proclist_{} AFTER INSERT ON {} FOR EACH ROW
-            BEGIN
-                CALL insert_split_result_proclist_{}(NEW.PROCLIST, ';', NEW.id);
-            END
-    """.format(table_name, table_name, table_name, table_name)
+        DROP TRIGGER IF EXISTS after_insert_proclist ON {}; 
+
+        CREATE TRIGGER after_insert_proclist
+            AFTER INSERT
+            ON {}
+            FOR EACH ROW
+            EXECUTE PROCEDURE add_proclist();
+    """.format(table_name, table_name)
+
